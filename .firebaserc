@@ -1,2 +1,5 @@
-projects:
-  default: meeran92-39c48
+{
+  "projects": {
+    "default": "meeran92-39c48"
+  }
+}
