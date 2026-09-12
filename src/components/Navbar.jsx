@@ -14,16 +14,17 @@ import {
   Wrench,
   CheckCircle2
 } from 'lucide-react';
+import { formatReadableDate } from '../utils/formatters';
 
 export function Navbar() {
   const { 
-    mobiles, 
+    mobiles = [], 
     setSelectedMobileForDetails, 
     setPersonHistoryData,
     findPersonHistory,
     currentScreen,
     setCurrentScreen,
-    counts
+    counts = { total: 0, stock: 0, service: 0, sold: 0, customers: 0 }
   } = useShop();
 
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -68,7 +69,7 @@ export function Navbar() {
     );
   }).slice(0, 6) : [];
 
-  const personMatch = query.length >= 3 ? findPersonHistory(query) : null;
+  const personMatch = (query.length >= 3 && typeof findPersonHistory === 'function') ? findPersonHistory(query) : null;
 
   const handleSelectMobile = (mob) => {
     setSelectedMobileForDetails(mob);
@@ -96,13 +97,14 @@ export function Navbar() {
     }
   };
 
+  // Safe configuration parameters
   const navLinks = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, count: null },
-    { id: 'all-mobiles', label: 'All Mobiles', icon: Layers, count: counts.total },
-    { id: 'stock-mobiles', label: 'Stock Mobiles', icon: Boxes, count: counts.stock },
-    { id: 'service-mobiles', label: 'Service Mobiles', icon: Wrench, count: counts.service },
-    { id: 'sold-mobiles', label: 'Sold Mobiles', icon: CheckCircle2, count: counts.sold },
-    { id: 'customers', label: 'Customers', icon: User, count: counts.customers },
+    { id: 'all-mobiles', label: 'All Mobiles', icon: Layers, count: counts?.total ?? 0 },
+    { id: 'stock-mobiles', label: 'Stock Mobiles', icon: Boxes, count: counts?.stock ?? 0 },
+    { id: 'service-mobiles', label: 'Service Mobiles', icon: Wrench, count: counts?.service ?? 0 },
+    { id: 'sold-mobiles', label: 'Sold Mobiles', icon: CheckCircle2, count: counts?.sold ?? 0 },
+    { id: 'customers', label: 'Customers', icon: User, count: counts?.customers ?? 0 },
     { id: 'find-mobile', label: 'Find Mobile', icon: Search, count: null },
   ];
 
@@ -115,7 +117,7 @@ export function Navbar() {
           
           {/* Logo & Brand */}
           <div 
-            onClick={() => setCurrentScreen('dashboard')}
+            onClick={() => setCurrentScreen && setCurrentScreen('dashboard')}
             className="flex items-center gap-3 shrink-0 cursor-pointer group"
           >
             <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-400 flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white font-bold ring-2 ring-indigo-500/30 group-hover:scale-105 transition-transform">
@@ -148,8 +150,8 @@ export function Navbar() {
                     setShowDropdown(true);
                   }}
                   onFocus={() => setShowDropdown(true)}
-                  placeholder="Search anything… (Model name, IM, IMEI, phone, person, sale)"
-                  className="w-full pl-10 pr-10 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs sm:text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all shadow-inner"
+                  placeholder="Search anything…"
+                  className="w-full pl-10 pr-10 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs sm:text-sm text-slate-100 placeholder-slate-400 focus:outline-none"
                 />
                 {searchQuery && (
                   <button
@@ -166,7 +168,7 @@ export function Navbar() {
               </div>
             </form>
 
-            {/* Live Search Dropdown */}
+            {/* Dropdown Result Panel */}
             {showDropdown && searchQuery.trim().length > 0 && (
               <div className="absolute left-0 right-0 mt-2 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-50 divide-y divide-slate-800">
                 {personMatch && (
@@ -177,17 +179,9 @@ export function Navbar() {
                           <User className="w-4 h-4" />
                         </div>
                         <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-slate-100 text-xs sm:text-sm">{personMatch.name}</span>
-                            <span className="text-[10px] font-mono bg-indigo-900/60 text-indigo-300 px-2 py-0.5 rounded border border-indigo-700/50">
-                              {personMatch.phone}
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-indigo-300/80">View complete shop history ({personMatch.events?.length || 0} interactions)</p>
+                          <span className="font-semibold text-slate-100 text-xs">{personMatch.name}</span>
+                          <p className="text-[11px] text-slate-400">{personMatch.phone}</p>
                         </div>
-                      </div>
-                      <div className="text-xs font-medium text-indigo-400 flex items-center gap-1">
-                        History <ArrowRight className="w-3.5 h-3.5" />
                       </div>
                     </div>
                   </div>
@@ -195,55 +189,28 @@ export function Navbar() {
 
                 {matchingMobiles.length > 0 ? (
                   <div>
-                    <div className="px-3 py-1.5 bg-slate-950/60 text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex justify-between">
-                      <span>Matching Mobiles</span>
-                      <span>{matchingMobiles.length} found</span>
-                    </div>
                     {matchingMobiles.map(m => (
                       <div
                         key={m.id}
                         onClick={() => handleSelectMobile(m)}
-                        className="p-3 hover:bg-slate-800/80 cursor-pointer flex items-center justify-between transition-colors"
+                        className="p-3 hover:bg-slate-800/80 cursor-pointer flex items-center justify-between text-xs text-slate-200"
                       >
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-indigo-400">
-                            <Smartphone className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-slate-100 text-xs">{m.mobileName}</span>
-                              <span className="text-[10px] text-slate-400 font-mono">({m.ram}/{m.storage})</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-[11px] text-slate-400 font-mono mt-0.5">
-                              <span>IM: <strong className="text-slate-300">{m.im}</strong></span>
-                              {m.imei && <span className="text-blue-400">IMEI: {m.imei}</span>}
-                            </div>
-                          </div>
+                        <div>
+                          <div className="font-semibold text-white">{m.mobileName}</div>
+                          <div className="text-[10px] text-slate-400 mt-0.5">IM: {m.im}</div>
                         </div>
-
-                        <div className="flex items-center gap-2">
-                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
-                            m.status === 'Stock' ? 'bg-blue-950 text-blue-300 border-blue-800' :
-                            m.status === 'Service' ? 'bg-amber-950 text-amber-300 border-amber-800' :
-                            'bg-emerald-950 text-emerald-300 border-emerald-800'
-                          }`}>
-                            {m.status}
-                          </span>
-                          <ArrowRight className="w-3.5 h-3.5 text-slate-500" />
-                        </div>
+                        <ArrowRight className="w-3.5 h-3.5 text-slate-500" />
                       </div>
                     ))}
                   </div>
                 ) : !personMatch && (
-                  <div className="p-4 text-center text-slate-400 text-xs">
-                    No records found matching "<span className="text-slate-200">{searchQuery}</span>".
-                  </div>
+                  <div className="p-4 text-center text-slate-400 text-xs">No records found matching "{searchQuery}".</div>
                 )}
               </div>
             )}
           </div>
 
-          {/* Right Header Area: Point 2 - Top Right Corner Add Mobile Button REMOVED. Live Clock remains. */}
+          {/* Right Header Area - Live Clock */}
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-3 bg-slate-800/60 border border-slate-700/60 px-3 py-1.5 rounded-xl text-xs font-mono text-slate-300">
               <div className="flex items-center gap-1 text-slate-300">
@@ -261,7 +228,7 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Top Navigation Bar */}
+      {/* Navigation Sub-Links Tabs Menu Container */}
       <div className="w-full px-4 sm:px-6 lg:px-8 bg-slate-950/80 overflow-x-auto">
         <nav className="flex items-center gap-1 py-1.5 min-w-max">
           {navLinks.map((item) => {
@@ -270,11 +237,10 @@ export function Navbar() {
             return (
               <button
                 key={item.id}
-                onClick={() => setCurrentScreen(item.id)}
+                type="button"
+                onClick={() => setCurrentScreen && setCurrentScreen(item.id)}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all ${
-                  isActive
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-800/70'
+                  isActive ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-300 hover:text-white hover:bg-slate-800/70'
                 }`}
               >
                 <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-slate-400'}`} />
@@ -284,7 +250,7 @@ export function Navbar() {
                     isActive ? 'bg-white/20 text-white' : 
                     item.id === 'stock-mobiles' ? 'bg-blue-950 text-blue-300 border border-blue-800' :
                     item.id === 'sold-mobiles' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' :
-                    item.id === 'service-mobiles' ? 'bg-amber-950 text-amber-300 border border-amber-800' :
+                    item.id === 'service-mobiles' ? 'bg-amber-950 text-amber-300 border-amber-800' :
                     'bg-slate-800 text-slate-300'
                   }`}>
                     {item.count}
