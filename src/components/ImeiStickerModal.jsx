@@ -8,7 +8,7 @@ export function ImeiStickerModal() {
 
   if (!imeiStickerData) return null;
 
-  const { mobileName, imei, im } = imeiStickerData;
+  const { mobileName, imei, im, ram, storage } = imeiStickerData;
   const barcodePattern = generateBarcodePattern(imei || im || '92REFONIC');
 
   const handlePrint = () => {
@@ -57,6 +57,10 @@ export function ImeiStickerModal() {
             {/* Mobile Name */}
             <div className="text-xs font-bold text-slate-900 truncate w-full mb-1">
               {mobileName}
+            </div>
+
+            <div className="text-[10px] font-mono text-slate-600">
+              {ram || '-'} / {storage || '-'}
             </div>
 
             {/* SVG Barcode Graphic */}

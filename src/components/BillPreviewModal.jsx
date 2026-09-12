@@ -1,14 +1,14 @@
 import React from 'react';
 import { useShop } from '../context/ShopContext';
-import { Printer, X, Barcode, CheckCircle2 } from 'lucide-react';
+import { Printer, X, ArrowRightLeft } from 'lucide-react';
 import { formatReadableDate } from '../utils/formatters';
 
 export function BillPreviewModal() {
-  const { billPreviewData, setBillPreviewData, setImeiStickerData } = useShop();
+  const { billPreviewData, setBillPreviewData } = useShop();
 
   if (!billPreviewData) return null;
 
-  const { mobile, sale, exchangeMobileWithImei } = billPreviewData;
+  const { mobile, sale } = billPreviewData;
 
   const handlePrint = () => {
     window.print();
@@ -16,12 +16,6 @@ export function BillPreviewModal() {
 
   const handleClose = () => {
     setBillPreviewData(null);
-  };
-
-  const handlePrintExchangeSticker = () => {
-    if (exchangeMobileWithImei) {
-      setImeiStickerData(exchangeMobileWithImei);
-    }
   };
 
   return (
@@ -44,40 +38,6 @@ export function BillPreviewModal() {
             <X className="w-5 h-5" />
           </button>
         </div>
-
-        {/* Point 5: Exchange Mobile Intake with IMEI Sticker Print Option Banner */}
-        {exchangeMobileWithImei && (
-          <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-indigo-950 border-b border-emerald-500/40 p-3.5 px-6 flex flex-wrap items-center justify-between gap-3 print:hidden animate-in fade-in">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
-                <CheckCircle2 className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-white font-mono">
-                    Exchange Mobile Intake: {exchangeMobileWithImei.mobileName}
-                  </span>
-                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">
-                    IM: {exchangeMobileWithImei.im}
-                  </span>
-                </div>
-                <p className="text-[11px] text-emerald-300 font-mono">
-                  IMEI Attached: <strong className="text-white">{exchangeMobileWithImei.imei}</strong> — Saved to Stock!
-                </p>
-              </div>
-            </div>
-
-            {/* Print Sticker Button for Exchange Mobile */}
-            <button
-              type="button"
-              onClick={handlePrintExchangeSticker}
-              className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-indigo-600/30 active:scale-95 transition-all"
-            >
-              <Barcode className="w-3.5 h-3.5" />
-              <span>Print IMEI Sticker</span>
-            </button>
-          </div>
-        )}
 
         {/* PRINTABLE BILL CANVAS */}
         <div className="p-6 overflow-y-auto printable-area bg-white text-slate-900 font-sans">
@@ -203,18 +163,6 @@ export function BillPreviewModal() {
             * Standard invoice pre-configured for printer.
           </p>
           <div className="flex flex-wrap gap-2">
-            {/* Point 5: Direct Print Sticker button if exchange mobile has IMEI */}
-            {exchangeMobileWithImei && (
-              <button
-                type="button"
-                onClick={handlePrintExchangeSticker}
-                className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-300 text-xs font-bold border border-indigo-500/50 flex items-center gap-1.5 shadow-sm active:scale-95 transition-all"
-              >
-                <Barcode className="w-4 h-4 text-indigo-400" />
-                <span>Print IMEI Sticker</span>
-              </button>
-            )}
-
             <button
               type="button"
               onClick={handlePrint}

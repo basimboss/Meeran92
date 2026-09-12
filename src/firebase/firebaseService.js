@@ -12,7 +12,8 @@ import {
   query,
   orderBy,
   serverTimestamp,
-  writeBatch
+  writeBatch,
+  runTransaction
 } from 'firebase/firestore';
 import { db } from './config';
 
@@ -31,6 +32,7 @@ export const subscribeMobiles = (callback) => {
     callback(mobiles);
   }, (error) => {
     console.error('Mobiles listener error:', error);
+    callback([]);
   });
 };
 
@@ -78,7 +80,7 @@ export const subscribePersons = (callback) => {
   return onSnapshot(collection(db, PERSONS_COL), (snapshot) => {
     const persons = {};
     snapshot.docs.forEach(d => {
-      persons[d.id] = { ...d.data() };
+      persons[d.id] = { id: d.id, ...d.data(), customerId: d.data().customerId || d.id };
     });
     callback(persons);
   }, (error) => {
@@ -91,19 +93,39 @@ export const upsertPersonInDb = async (phone, personData) => {
   const key = phone ? phone.replace(/[^\d]/g, '') : personData.name?.replace(/\s+/g, '_').toLowerCase();
   if (!key) return;
   const docRef = doc(db, PERSONS_COL, key);
-  const existing = await getDoc(docRef);
-  if (existing.exists()) {
-    await updateDoc(docRef, {
+  await runTransaction(db, async (transaction) => {
+    const existing = await transaction.get(docRef);
+    const current = existing.exists() ? existing.data() : {};
+    transaction.set(docRef, {
+      ...current,
       ...personData,
+      customerId: personData.customerId || current.customerId || key,
+      events: personData.events || current.events || [],
+      createdAt: current.createdAt || serverTimestamp(),
       updatedAt: serverTimestamp()
     });
-  } else {
-    await setDoc(docRef, {
-      ...personData,
-      createdAt: serverTimestamp(),
+  });
+  return key;
+};
+
+export const appendPersonEventToDb = async (phone, profile, event) => {
+  const key = phone ? phone.replace(/[^\d]/g, '') : profile.name?.replace(/\s+/g, '_').toLowerCase();
+  if (!key) return;
+  const docRef = doc(db, PERSONS_COL, key);
+  await runTransaction(db, async (transaction) => {
+    const snapshot = await transaction.get(docRef);
+    const current = snapshot.exists() ? snapshot.data() : {};
+    const events = current.events || [];
+    transaction.set(docRef, {
+      ...current,
+      ...profile,
+      customerId: profile.customerId || current.customerId || key,
+      events: [event, ...events],
+      createdAt: current.createdAt || serverTimestamp(),
       updatedAt: serverTimestamp()
     });
-  }
+  });
+  return key;
 };
 
 // ─── SEED INITIAL DATA ────────────────────────────────────────────────────────

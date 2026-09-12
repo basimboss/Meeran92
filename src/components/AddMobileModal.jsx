@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useShop } from '../context/ShopContext';
 import { 
   X, 
@@ -17,7 +17,7 @@ import {
 import { getCurrentDateFormatted } from '../utils/formatters';
 
 export function AddMobileModal() {
-  const { isAddMobileOpen, setIsAddMobileOpen, addMobile, setImeiStickerData } = useShop();
+  const { isAddMobileOpen, setIsAddMobileOpen, addMobile, setImeiStickerData, openMobileScanner, barcodeScanResult } = useShop();
 
   // Point 6: Removed Dealer / Exchange toggle, simply show Name of the Person
   const [formData, setFormData] = useState({
@@ -27,7 +27,7 @@ export function AddMobileModal() {
     inDate: getCurrentDateFormatted(),
     personName: '', // Name of the person
     personNumber: '', // Mobile number
-    im: `IM-${Math.floor(1000 + Math.random() * 9000)}`,
+    im: '',
     description: '',
     imei: ''
   });
@@ -37,6 +37,13 @@ export function AddMobileModal() {
   const [savedSuccessMobile, setSavedSuccessMobile] = useState(null);
   const [barcodeInputManual, setBarcodeInputManual] = useState('');
 
+  useEffect(() => {
+    if (barcodeScanResult && isAddMobileOpen) {
+      setFormData(prev => ({ ...prev, imei: barcodeScanResult }));
+      setBarcodeInputManual('');
+    }
+  }, [barcodeScanResult, isAddMobileOpen]);
+
   if (!isAddMobileOpen) return null;
 
   const handleChange = (e) => {
@@ -45,7 +52,11 @@ export function AddMobileModal() {
   };
 
   const handleAttachBarcode = (code) => {
-    const finalCode = code || barcodeInputManual || `86${Math.floor(1000000000000 + Math.random() * 9000000000000)}`;
+    const finalCode = (code || barcodeInputManual).trim();
+    if (!finalCode) {
+      openMobileScanner();
+      return;
+    }
     setFormData(prev => ({ ...prev, imei: finalCode }));
     setBarcodeInputManual('');
   };
@@ -73,8 +84,8 @@ export function AddMobileModal() {
     commitSave();
   };
 
-  const commitSave = () => {
-    const saved = addMobile({
+  const commitSave = async () => {
+    const saved = await addMobile({
       ...formData,
       contactName: formData.personName,
       contactNumber: formData.personNumber
@@ -113,17 +124,16 @@ export function AddMobileModal() {
       inDate: getCurrentDateFormatted(),
       personName: '',
       personNumber: '',
-      im: `IM-${Math.floor(1000 + Math.random() * 9000)}`,
+      im: '',
       description: '',
       imei: ''
     });
   };
 
   const handlePrintSticker = () => {
-    if (savedSuccessMobile) {
-      setImeiStickerData(savedSuccessMobile);
-      closeAll();
-    }
+    if (!savedSuccessMobile) return;
+    setImeiStickerData(savedSuccessMobile);
+    closeAll();
   };
 
   return (
@@ -175,37 +185,28 @@ export function AddMobileModal() {
               <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
                 2. RAM <span className="text-red-400">*</span>
               </label>
-              <select
+              <input
+                list="mobile-ram-options"
                 name="ram"
                 value={formData.ram}
                 onChange={handleChange}
                 className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
-              >
-                <option value="4GB">4GB</option>
-                <option value="6GB">6GB</option>
-                <option value="8GB">8GB</option>
-                <option value="12GB">12GB</option>
-                <option value="16GB">16GB</option>
-                <option value="24GB">24GB</option>
-              </select>
+              />
+              <datalist id="mobile-ram-options"><option value="4GB" /><option value="6GB" /><option value="8GB" /><option value="12GB" /><option value="16GB" /><option value="24GB" /></datalist>
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
                 3. Storage <span className="text-red-400">*</span>
               </label>
-              <select
+              <input
+                list="mobile-storage-options"
                 name="storage"
                 value={formData.storage}
                 onChange={handleChange}
                 className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
-              >
-                <option value="64GB">64GB</option>
-                <option value="128GB">128GB</option>
-                <option value="256GB">256GB</option>
-                <option value="512GB">512GB</option>
-                <option value="1TB">1TB</option>
-              </select>
+              />
+              <datalist id="mobile-storage-options"><option value="64GB" /><option value="128GB" /><option value="256GB" /><option value="512GB" /><option value="1TB" /></datalist>
             </div>
           </div>
 
@@ -327,7 +328,7 @@ export function AddMobileModal() {
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => handleAttachBarcode()}
+                    onClick={openMobileScanner}
                     className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium flex items-center gap-1 border border-slate-700"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
@@ -368,10 +369,10 @@ export function AddMobileModal() {
                   <span>* Optional: Can be saved without attaching IMEI</span>
                   <button
                     type="button"
-                    onClick={() => handleAttachBarcode()}
+                    onClick={openMobileScanner}
                     className="text-indigo-400 hover:text-indigo-300 underline font-mono"
                   >
-                    + Generate Mock IMEI
+                    Open Barcode Scanner
                   </button>
                 </div>
               </div>
@@ -473,33 +474,23 @@ export function AddMobileModal() {
               </p>
 
               <div className="mt-6 flex justify-center gap-3">
-                {savedSuccessMobile.imei ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={handlePrintSticker}
-                      className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl flex items-center gap-2 shadow-lg shadow-indigo-600/30"
-                    >
-                      <Printer className="w-4 h-4" />
-                      <span>Print IMEI Sticker</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={closeAll}
-                      className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl"
-                    >
-                      Done
-                    </button>
-                  </>
-                ) : (
+                {savedSuccessMobile.imei && (
                   <button
                     type="button"
-                    onClick={closeAll}
-                    className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-emerald-600/30"
+                    onClick={handlePrintSticker}
+                    className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl flex items-center gap-2 shadow-lg shadow-indigo-600/30"
                   >
-                    Done
+                    <Printer className="w-4 h-4" />
+                    <span>Print Sticker</span>
                   </button>
                 )}
+                <button
+                  type="button"
+                  onClick={closeAll}
+                  className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-emerald-600/30"
+                >
+                  Done
+                </button>
               </div>
             </div>
           </div>

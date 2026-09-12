@@ -199,14 +199,14 @@ export function PersonHistoryModal() {
                             <div className="flex items-center gap-3 text-xs font-mono text-slate-400 mt-0.5">
                               <span>IM: <strong className="text-indigo-400">{m.im}</strong></span>
                               {m.imei && <span className="text-emerald-400">IMEI: {m.imei}</span>}
-                              <span>Date: {formatReadableDate(m.saleDate)}</span>
+                              <span>Date: {formatReadableDate(m.saleDetails?.saleDate || m.saleDate)}</span>
                             </div>
                           </div>
                         </div>
 
                         <div className="flex items-center gap-3">
                           <span className="text-sm font-mono font-black text-emerald-400">
-                            {m.price}
+                            {m.saleDetails?.sellPrice || m.price || '-'}
                           </span>
                           <Eye className="w-4 h-4 text-slate-500 hover:text-white" />
                         </div>

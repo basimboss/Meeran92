@@ -24,3 +24,6 @@ Thumbs.db
 
 # Firebase
 .firebase/
+
+# Local Firestore backups
+backups/

@@ -26,7 +26,8 @@ export function MobileDetailsModal() {
     setSelectedMobileForReturn,
     setSelectedMobileForDelete,
     returnToStock,
-    setBillPreviewData
+    setBillPreviewData,
+    mobiles
   } = useShop();
 
   // Point 10: Toggle for "More Details" to reveal who sold/brought the mobile to shop
@@ -34,7 +35,7 @@ export function MobileDetailsModal() {
 
   if (!selectedMobileForDetails) return null;
 
-  const mob = selectedMobileForDetails;
+  const mob = mobiles.find(item => item.id === selectedMobileForDetails.id) || selectedMobileForDetails;
   const barcodePattern = mob.imei ? generateBarcodePattern(mob.imei) : [];
 
   const handleClose = () => {
@@ -229,7 +230,7 @@ export function MobileDetailsModal() {
           )}
 
           {/* Sold Info (if sold) */}
-          {mob.status === 'Sold' && mob.saleDetails && (
+          {mob.saleDetails && (
             <div className="bg-emerald-950/30 border border-emerald-800/50 rounded-xl p-4 space-y-2">
               <div className="flex items-center justify-between pb-2 border-b border-emerald-900/50">
                 <span className="text-xs font-bold text-emerald-300 uppercase tracking-wider">Sale Record</span>
@@ -254,6 +255,37 @@ export function MobileDetailsModal() {
               <div className="text-xs text-slate-300">
                 <span className="text-amber-400 font-semibold">Reason: </span>
                 {mob.serviceDetails.serviceReason}
+              </div>
+            </div>
+          )}
+
+          {mob.saleDetails?.customerName && (
+            <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-4 space-y-2 text-xs">
+              <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Linked Customer</div>
+              <div className="grid grid-cols-2 gap-2 font-mono text-slate-300">
+                <div>Name: <strong className="text-white">{mob.saleDetails.customerName}</strong></div>
+                <div>Phone: <strong className="text-indigo-300">{mob.saleDetails.customerMobile || '-'}</strong></div>
+                <div>Customer ID: <strong className="text-indigo-300">{mob.saleDetails.customerId || mob.customerId || '-'}</strong></div>
+                {mob.returnDetails && <div>Return Date: <strong className="text-purple-300">{formatReadableDate(mob.returnDetails.outDate)}</strong></div>}
+              </div>
+              {mob.returnDetails?.description && <p className="text-slate-400">Return reason: {mob.returnDetails.description}</p>}
+            </div>
+          )}
+
+          {mob.history?.length > 0 && (
+            <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-4">
+              <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-3">Complete Mobile History</div>
+              <div className="space-y-2 max-h-52 overflow-y-auto">
+                {mob.history.map((event, index) => (
+                  <div key={`${event.date}-${event.time}-${event.type}-${index}`} className="border-l-2 border-indigo-500/50 pl-3 text-xs">
+                    <div className="flex items-center justify-between gap-2">
+                      <strong className="text-slate-200">{event.title || event.type || 'Event'}</strong>
+                      <span className="text-slate-500 font-mono">{formatReadableDate(event.date)} {event.time || ''}</span>
+                    </div>
+                    {event.description && <p className="text-slate-400 mt-0.5">{event.description}</p>}
+                    {event.imei && <span className="text-blue-400 font-mono">IMEI: {event.imei}</span>}
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -311,6 +343,20 @@ export function MobileDetailsModal() {
                   Sell
                 </button>
               </>
+            )}
+
+            {mob.status === 'Sold' && (
+              <button
+                type="button"
+                onClick={() => {
+                  handleClose();
+                  setSelectedMobileForReturn(mob);
+                }}
+                className="px-3.5 py-2 rounded-xl bg-purple-950 hover:bg-purple-900 text-purple-300 border border-purple-800/80 text-xs font-semibold flex items-center gap-1.5"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Return</span>
+              </button>
             )}
 
             {mob.status === 'Service' && (

@@ -8,6 +8,7 @@ export function ReturnMobileModal() {
 
   const [outDate, setOutDate] = useState(getCurrentDateFormatted());
   const [description, setDescription] = useState('');
+  const [saving, setSaving] = useState(false);
 
   if (!selectedMobileForReturn) return null;
 
@@ -18,19 +19,20 @@ export function ReturnMobileModal() {
     setDescription('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!description.trim()) {
       alert('Please provide a return reason / description');
       return;
     }
 
-    returnMobile(mob.id, {
-      outDate,
-      description
-    });
-
-    handleClose();
+    setSaving(true);
+    try {
+      await returnMobile(mob.id, { outDate, description });
+      handleClose();
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -119,7 +121,7 @@ export function ReturnMobileModal() {
               className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg shadow-purple-600/30 flex items-center gap-1.5"
             >
               <RotateCcw className="w-4 h-4" />
-              <span>Confirm Return</span>
+              <span>{saving ? 'Saving Return...' : 'Confirm Return'}</span>
             </button>
           </div>
 

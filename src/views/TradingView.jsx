@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useShop } from '../context/ShopContext';
 import { 
   TrendingUp, 
@@ -13,7 +13,7 @@ import {
   Boxes
 } from 'lucide-react';
 import { formatCurrency } from '../utils/priceParser';
-import { formatReadableDate } from '../utils/formatters';
+import { formatReadableDate, getCurrentDateFormatted } from '../utils/formatters';
 
 export function TradingView() {
   const { 
@@ -21,11 +21,32 @@ export function TradingView() {
     calculateTradingTotals, 
     mobiles, 
     setBillPreviewData,
-    setSelectedMobileForDetails 
+    setSelectedMobileForDetails,
+    getTradingSales
   } = useShop();
 
   const totals = calculateTradingTotals();
-  const soldMobiles = mobiles.filter(m => m.status === 'Sold');
+  const today = getCurrentDateFormatted();
+  const [period, setPeriod] = useState('daily');
+  const [draftDate, setDraftDate] = useState(today);
+  const [appliedDate, setAppliedDate] = useState(today);
+  const sales = getTradingSales();
+  const selectedParts = appliedDate.split('-').map(Number);
+  const selectedValue = new Date(selectedParts[0], selectedParts[1] - 1, selectedParts[2]);
+  const dateKey = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  const weekStart = new Date(selectedValue);
+  weekStart.setDate(selectedValue.getDate() - selectedValue.getDay());
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  const rangeStart = period === 'weekly' ? dateKey(weekStart) : period === 'monthly' ? `${appliedDate.slice(0, 7)}-01` : period === 'yearly' ? `${appliedDate.slice(0, 4)}-01-01` : appliedDate;
+  const rangeEnd = period === 'weekly' ? dateKey(weekEnd) : period === 'monthly' ? dateKey(new Date(selectedParts[0], selectedParts[1], 0)) : period === 'yearly' ? `${appliedDate.slice(0, 4)}-12-31` : appliedDate;
+  const filteredSales = sales.filter(mobile => mobile.saleDetails.saleDate >= rangeStart && mobile.saleDetails.saleDate <= rangeEnd);
+  const filteredTotal = filteredSales.reduce((sum, mobile) => sum + Number(mobile.saleDetails.sellPriceNumeric || 0), 0);
+  const handleReset = () => {
+    setPeriod('daily');
+    setDraftDate(today);
+    setAppliedDate(today);
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
@@ -58,8 +79,27 @@ export function TradingView() {
         </div>
 
         <div className="text-xs font-mono text-slate-400 bg-slate-950/70 border border-slate-800 px-3.5 py-2 rounded-xl">
-          Completed Sales: <strong className="text-emerald-400 font-bold">{soldMobiles.length}</strong>
+          Transactions: <strong className="text-emerald-400 font-bold">{filteredSales.length}</strong>
         </div>
+      </div>
+
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-wrap items-end gap-3">
+        <div>
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Period</label>
+          <select value={period} onChange={(event) => setPeriod(event.target.value)} className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-slate-200 font-semibold">
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Date</label>
+          <input type="date" value={draftDate} onChange={(event) => setDraftDate(event.target.value)} className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-slate-200 font-mono" />
+        </div>
+        <button type="button" onClick={() => setAppliedDate(draftDate)} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl">Apply</button>
+        <button type="button" onClick={handleReset} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700">Reset</button>
+        <div className="ml-auto text-xs font-mono text-slate-400">Showing {filteredSales.length} transaction(s) · {formatCurrency(filteredTotal)}</div>
       </div>
 
       {/* 4 Large Trading Metric Cards */}
@@ -128,7 +168,7 @@ export function TradingView() {
             </div>
           </div>
           <span className="text-xs font-mono text-slate-400">
-            {soldMobiles.length} Settled Transactions
+            {filteredSales.length} Settled Transactions
           </span>
         </div>
 
@@ -147,8 +187,8 @@ export function TradingView() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800 font-mono">
-              {soldMobiles.length > 0 ? (
-                soldMobiles.map((mob) => {
+              {filteredSales.length > 0 ? (
+                filteredSales.map((mob) => {
                   const sale = mob.saleDetails || {};
                   return (
                     <tr 
@@ -238,7 +278,7 @@ export function TradingView() {
               ) : (
                 <tr>
                   <td colSpan={8} className="py-10 text-center text-slate-400 text-sm">
-                    No sales recorded yet. Once a mobile is sold, revenue calculations will appear here.
+                    No sales recorded for the selected period.
                   </td>
                 </tr>
               )}

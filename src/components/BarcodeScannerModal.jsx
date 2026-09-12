@@ -17,6 +17,7 @@ export function BarcodeScannerModal() {
   const { 
     isBarcodeScannerOpen, 
     setIsBarcodeScannerOpen, 
+    setBarcodeScanResult,
     mobiles,
     setSelectedMobileForEdit,
     setSelectedMobileForSell,
@@ -41,6 +42,7 @@ export function BarcodeScannerModal() {
     if (!cleanCode) return;
 
     setSearched(true);
+    setBarcodeScanResult(cleanCode);
     const found = mobiles.find(m => 
       (m.imei && m.imei.toLowerCase() === cleanCode) ||
       (m.im && m.im.toLowerCase() === cleanCode)

@@ -27,6 +27,7 @@ export function SoldMobilesView() {
   const [searchQuery, setSearchQuery] = useState('');
   const [restockTargetMobile, setRestockTargetMobile] = useState(null);
   const [restockDescription, setRestockDescription] = useState('');
+  const [restockingId, setRestockingId] = useState(null);
 
   // Fixed matching logic to handle uppercase/lowercase states smoothly
   const soldMobiles = mobiles.filter(m => m.status?.toLowerCase() === 'sold');
@@ -51,7 +52,8 @@ export function SoldMobilesView() {
   };
 
   const handleConfirmRestock = async () => {
-    if (!restockTargetMobile) return;
+    if (!restockTargetMobile || restockingId) return;
+    setRestockingId(restockTargetMobile.id);
     try {
       await restockMobile(restockTargetMobile.id, { description: restockDescription });
       setRestockTargetMobile(null);
@@ -60,6 +62,8 @@ export function SoldMobilesView() {
     } catch (error) {
       console.error("Restock failed:", error);
       alert("Failed to restock mobile item.");
+    } finally {
+      setRestockingId(null);
     }
   };
 
@@ -174,7 +178,7 @@ export function SoldMobilesView() {
             <textarea rows="3" value={restockDescription} onChange={(e) => setRestockDescription(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 focus:outline-none" />
             <div className="flex justify-end gap-3">
               <button type="button" onClick={() => setRestockTargetMobile(null)} className="text-slate-400 text-xs">Cancel</button>
-              <button type="button" onClick={handleConfirmRestock} className="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl">Confirm Restock</button>
+              <button type="button" onClick={handleConfirmRestock} disabled={Boolean(restockingId)} className="px-4 py-2 bg-indigo-600 disabled:opacity-50 text-white text-xs font-bold rounded-xl">{restockingId ? 'Restocking...' : 'Confirm Restock'}</button>
             </div>
           </div>
         </div>

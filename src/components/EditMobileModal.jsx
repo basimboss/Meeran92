@@ -37,7 +37,8 @@ export function EditMobileModal() {
   };
 
   const handleAttachBarcode = (code) => {
-    const finalCode = code || barcodeInputManual || `86${Math.floor(1000000000000 + Math.random() * 9000000000000)}`;
+    const finalCode = (code || barcodeInputManual).trim();
+    if (!finalCode) return;
     setFormData(prev => ({ ...prev, imei: finalCode }));
     setBarcodeInputManual('');
   };
@@ -99,37 +100,28 @@ export function EditMobileModal() {
               <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
                 RAM
               </label>
-              <select
+              <input
+                list="edit-mobile-ram-options"
                 name="ram"
                 value={formData.ram}
                 onChange={handleChange}
                 className="w-full px-3.5 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
-              >
-                <option value="4GB">4GB</option>
-                <option value="6GB">6GB</option>
-                <option value="8GB">8GB</option>
-                <option value="12GB">12GB</option>
-                <option value="16GB">16GB</option>
-                <option value="24GB">24GB</option>
-              </select>
+              />
+              <datalist id="edit-mobile-ram-options"><option value="4GB" /><option value="6GB" /><option value="8GB" /><option value="12GB" /><option value="16GB" /><option value="24GB" /></datalist>
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
                 Storage
               </label>
-              <select
+              <input
+                list="edit-mobile-storage-options"
                 name="storage"
                 value={formData.storage}
                 onChange={handleChange}
                 className="w-full px-3.5 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
-              >
-                <option value="64GB">64GB</option>
-                <option value="128GB">128GB</option>
-                <option value="256GB">256GB</option>
-                <option value="512GB">512GB</option>
-                <option value="1TB">1TB</option>
-              </select>
+              />
+              <datalist id="edit-mobile-storage-options"><option value="64GB" /><option value="128GB" /><option value="256GB" /><option value="512GB" /><option value="1TB" /></datalist>
             </div>
           </div>
 

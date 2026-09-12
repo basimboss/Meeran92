@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useShop } from '../context/ShopContext';
 import { 
   X, 
@@ -22,7 +22,10 @@ export function SellMobileModal() {
     selectedMobileForSell, 
     setSelectedMobileForSell, 
     sellMobile, 
-    setBillPreviewData 
+    setBillPreviewData,
+    mobiles,
+    openMobileScanner,
+    barcodeScanResult
   } = useShop();
 
   // Section B - Sale Form
@@ -44,12 +47,32 @@ export function SellMobileModal() {
     inDate: getCurrentDateFormatted(),
     personName: '',
     personNumber: '',
-    im: `EX-${Math.floor(1000 + Math.random() * 9000)}`,
+    im: '',
     description: '',
     imei: ''
   });
 
   const [barcodeInputManual, setBarcodeInputManual] = useState('');
+  const [selectedExchangeMobile, setSelectedExchangeMobile] = useState(null);
+
+  useEffect(() => {
+    if (!barcodeScanResult || !selectedMobileForSell) return;
+    const normalized = barcodeScanResult.trim().toLowerCase();
+    const found = mobiles.find(item => item.id === barcodeScanResult || item.imei?.toLowerCase() === normalized || item.im?.toLowerCase() === normalized);
+    if (found && found.id !== selectedMobileForSell.id) {
+      setSelectedExchangeMobile(found);
+      setExchangeForm(prev => ({
+        ...prev,
+        mobileName: found.mobileName || '',
+        ram: found.ram || prev.ram,
+        storage: found.storage || prev.storage,
+        im: found.im || prev.im,
+        imei: found.imei || barcodeScanResult,
+        description: found.description || prev.description
+      }));
+      setBarcodeInputManual(found.imei || found.im || barcodeScanResult);
+    }
+  }, [barcodeScanResult, mobiles, selectedMobileForSell]);
 
   if (!selectedMobileForSell) return null;
 
@@ -73,11 +96,12 @@ export function SellMobileModal() {
       inDate: getCurrentDateFormatted(),
       personName: '',
       personNumber: '',
-      im: `EX-${Math.floor(1000 + Math.random() * 9000)}`,
+      im: '',
       description: '',
       imei: ''
     });
     setBarcodeInputManual('');
+    setSelectedExchangeMobile(null);
   };
 
   const handleSaleChange = (e) => {
@@ -100,8 +124,18 @@ export function SellMobileModal() {
   };
 
   const handleAttachExchangeBarcode = (code) => {
-    const finalCode = (code || barcodeInputManual).trim() || `86${Math.floor(1000000000000 + Math.random() * 9000000000000)}`;
-    setExchangeForm(prev => ({ ...prev, imei: finalCode }));
+    const finalCode = (code || barcodeInputManual).trim();
+    if (!finalCode) {
+      openMobileScanner();
+      return;
+    }
+    const found = mobiles.find(item => item.id === finalCode || item.imei?.toLowerCase() === finalCode.toLowerCase() || item.im?.toLowerCase() === finalCode.toLowerCase());
+    if (found && found.id !== mob.id) {
+      setSelectedExchangeMobile(found);
+      setExchangeForm(prev => ({ ...prev, mobileName: found.mobileName || '', ram: found.ram || prev.ram, storage: found.storage || prev.storage, im: found.im || prev.im, imei: found.imei || finalCode, description: found.description || prev.description }));
+    } else if (!found) {
+      setExchangeForm(prev => ({ ...prev, imei: finalCode }));
+    }
     setBarcodeInputManual('');
   };
 
@@ -109,7 +143,7 @@ export function SellMobileModal() {
     setExchangeForm(prev => ({ ...prev, imei: '' }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!saleForm.customerName.trim()) {
       alert('Please enter Customer Name');
@@ -145,11 +179,12 @@ export function SellMobileModal() {
     const fullSalePayload = {
       ...saleForm,
       exchangeMobile: fullExchangeMobile,
+      exchangeMobileId: selectedExchangeMobile?.id || null,
       exchangeMobileName: exchangeForm.mobileName,
       exchangeMobileIm: exchangeForm.im
     };
 
-    const updatedMob = sellMobile(mob.id, fullSalePayload);
+    const updatedMob = await sellMobile(mob.id, fullSalePayload);
 
     // Point 5: Pass exchange mobile with IMEI so sticker printer option can be shown
     setBillPreviewData({
@@ -431,37 +466,28 @@ export function SellMobileModal() {
                     <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
                       RAM
                     </label>
-                    <select
+                    <input
+                      list="exchange-ram-options"
                       name="ram"
                       value={exchangeForm.ram}
                       onChange={handleExchangeChange}
                       className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    >
-                      <option value="4GB">4GB</option>
-                      <option value="6GB">6GB</option>
-                      <option value="8GB">8GB</option>
-                      <option value="12GB">12GB</option>
-                      <option value="16GB">16GB</option>
-                      <option value="24GB">24GB</option>
-                    </select>
+                    />
+                    <datalist id="exchange-ram-options"><option value="4GB" /><option value="6GB" /><option value="8GB" /><option value="12GB" /><option value="16GB" /><option value="24GB" /></datalist>
                   </div>
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
                       Storage
                     </label>
-                    <select
+                    <input
+                      list="exchange-storage-options"
                       name="storage"
                       value={exchangeForm.storage}
                       onChange={handleExchangeChange}
                       className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    >
-                      <option value="64GB">64GB</option>
-                      <option value="128GB">128GB</option>
-                      <option value="256GB">256GB</option>
-                      <option value="512GB">512GB</option>
-                      <option value="1TB">1TB</option>
-                    </select>
+                    />
+                    <datalist id="exchange-storage-options"><option value="64GB" /><option value="128GB" /><option value="256GB" /><option value="512GB" /><option value="1TB" /></datalist>
                   </div>
                 </div>
 
@@ -603,12 +629,17 @@ export function SellMobileModal() {
                         <span>* After attaching, sticker print option will be available on bill preview</span>
                         <button
                           type="button"
-                          onClick={() => handleAttachExchangeBarcode()}
+                          onClick={openMobileScanner}
                           className="text-indigo-400 hover:text-indigo-300 underline font-mono"
                         >
-                          + Simulate Scan Barcode
+                          Open Existing Barcode Scanner
                         </button>
                       </div>
+                    </div>
+                  )}
+                  {selectedExchangeMobile && (
+                    <div className="mt-2 p-2.5 rounded-xl border border-blue-500/30 bg-blue-950/30 text-xs text-blue-200">
+                      Existing mobile selected: <strong>{selectedExchangeMobile.mobileName}</strong> [{selectedExchangeMobile.im}] {selectedExchangeMobile.imei ? `IMEI ${selectedExchangeMobile.imei}` : ''}
                     </div>
                   )}
                 </div>
