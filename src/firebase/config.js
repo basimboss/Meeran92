@@ -1,10 +1,10 @@
 // Firebase Configuration — Meeran92 Portal
 import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyC9a9alnbR0CcIBYCObeU41BSA6vaXcjHs",
-  authDomain: "meeran92-39c48.firebaseapp.com",
+  authDomain: "://firebaseapp.com",
   projectId: "meeran92-39c48",
   storageBucket: "meeran92-39c48.firebasestorage.app",
   messagingSenderId: "42865400089",
@@ -14,7 +14,11 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore Database
-export const db = getFirestore(app);
+// Initialize Firestore Database with Offline Caching Enabled (Makes it load fast!)
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager()
+  })
+});
 
 export default app;

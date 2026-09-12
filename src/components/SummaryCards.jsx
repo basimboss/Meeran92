@@ -3,7 +3,13 @@ import { useShop } from '../context/ShopContext';
 import { Smartphone, Boxes, Wrench, ArrowUpRight } from 'lucide-react';
 
 export function SummaryCards() {
-  const { counts, setCurrentScreen } = useShop();
+  // Safe destructuring with fallback object initialization to prevent system crashes
+  const { counts = { total: 0, stock: 0, service: 0 }, setCurrentScreen } = useShop();
+
+  // Guard against undefined count properties gracefully by setting defaults
+  const totalCount = counts?.total ?? 0;
+  const stockCount = counts?.stock ?? 0;
+  const serviceCount = counts?.service ?? 0;
 
   // Point 3: Sold mobiles removed from dashboard summary cards
   // Point 9: Stock mobiles color changed to Blue
@@ -11,7 +17,7 @@ export function SummaryCards() {
     {
       id: 'all-mobiles',
       label: 'Total Mobiles',
-      value: counts.total,
+      value: totalCount,
       sub: 'All inventory registered',
       icon: Smartphone,
       color: 'text-indigo-400',
@@ -20,7 +26,7 @@ export function SummaryCards() {
     {
       id: 'stock-mobiles',
       label: 'Stock Mobiles',
-      value: counts.stock,
+      value: stockCount,
       sub: 'Ready for sale',
       icon: Boxes,
       color: 'text-blue-400', // Point 9: Blue color for Stock
@@ -29,7 +35,7 @@ export function SummaryCards() {
     {
       id: 'service-mobiles',
       label: 'Service Mobiles',
-      value: counts.service,
+      value: serviceCount,
       sub: 'Under repair / warranty',
       icon: Wrench,
       color: 'text-amber-400',
@@ -44,7 +50,7 @@ export function SummaryCards() {
         return (
           <div
             key={card.id}
-            onClick={() => setCurrentScreen(card.id)}
+            onClick={() => setCurrentScreen && setCurrentScreen(card.id)}
             className={`p-5 rounded-2xl border transition-all cursor-pointer group bg-slate-900 shadow-md relative overflow-hidden ${card.bg}`}
           >
             <div className="flex items-center justify-between mb-2">
